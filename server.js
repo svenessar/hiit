@@ -7,10 +7,36 @@ const PORT = 9012;
 const DATA_FILE = path.join(__dirname, 'data', 'routines.json');
 
 app.use(express.json());
-app.use(express.static('dist'));
 
+// Erstelle data Verzeichnis
 if (!fs.existsSync(path.join(__dirname, 'data'))) {
   fs.mkdirSync(path.join(__dirname, 'data'));
+}
+
+// Prüfe ob dist existiert
+const distExists = fs.existsSync(path.join(__dirname, 'dist'));
+console.log('dist folder exists:', distExists);
+
+if (!distExists) {
+  console.log('⚠️  No dist folder - starting Vite dev server...');
+  
+  // Starte Vite asynchron
+  setTimeout(async () => {
+    try {
+      const { createServer } = require('vite');
+      const vite = await createServer({
+        server: { middlewareMode: true },
+        appType: 'spa',
+      });
+      app.use(vite.middlewares);
+      console.log('✅ Vite dev server started');
+    } catch (err) {
+      console.error('❌ Failed to start Vite:', err);
+    }
+  }, 100);
+} else {
+  console.log('📦 Serving from dist folder');
+  app.use(express.static('dist'));
 }
 
 function loadRoutines() {
@@ -72,10 +98,12 @@ app.delete('/api/routines/:id', (req, res) => {
   }
 });
 
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
-});
+if (distExists) {
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+  });
+}
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`HIIT Timer running on http://localhost:${PORT}`);
+  console.log(`✅ HIIT Timer running on http://localhost:${PORT}`);
 });
