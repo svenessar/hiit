@@ -1,38 +1,24 @@
-# Multi-stage Build für kleineres finales Image
-FROM node:18-alpine AS builder
-
-WORKDIR /app
-
-# Kopiere package files
-COPY package*.json ./
-
-# Installiere ALLE dependencies (auch devDependencies für den Build)
-RUN npm ci
-
-# Kopiere Source Code
-COPY . .
-
-# Baue die Anwendung
-# Setze NODE_OPTIONS für mehr Speicher beim Build (wichtig für Raspberry Pi)
-ENV NODE_OPTIONS="--max-old-space-size=1024"
-RUN npm run build
-
-# Production Stage
 FROM node:18-alpine
 
 WORKDIR /app
 
-# Kopiere nur production dependencies
-COPY package*.json ./
-RUN npm ci --only=production
+# Kopiere package.json
+COPY package.json ./
 
-# Kopiere Server-Datei und gebaute Dateien
-COPY server.js ./
-COPY --from=builder /app/dist ./dist
+# Installiere Dependencies mit Fehlertoleranz
+RUN npm install --legacy-peer-deps || npm install --force
+
+# Kopiere alle Dateien
+COPY . .
 
 # Erstelle Data-Verzeichnis
 RUN mkdir -p /app/data
 
+# Port exponieren
 EXPOSE 9012
 
+# Environment
+ENV NODE_ENV=production
+
+# Starte Server
 CMD ["node", "server.js"]

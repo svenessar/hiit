@@ -2,20 +2,14 @@ version: '3.8'
 
 services:
   hiit-timer:
-    build: 
-      context: .
-      # Erhöhe die Speicherlimits für den Build-Prozess
-      shm_size: '256m'
+    build: .
     ports:
       - "9012:9012"
     volumes:
-      - hiit_etc:/app/data
+      - hiit_data:/app/data
     restart: unless-stopped
     environment:
       - NODE_ENV=production
-    # Speicherlimit für den Container (optional, anpassen je nach RAM)
-    mem_limit: 512m
-    mem_reservation: 256m
       
 volumes:
-  hiit_etc:
+  hiit_data:
