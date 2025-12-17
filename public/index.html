@@ -2,7 +2,10 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="HIIT Timer">
     <title>HIIT Timer</title>
     <style>
         * {
@@ -101,15 +104,15 @@
         }
         
         .timer-ring-progress.work {
-            stroke: #ff6b6b;
+            stroke: #ff6b6b;  /* Rot für Training */
         }
         
         .timer-ring-progress.rest {
-            stroke: #ffd93d;
+            stroke: #6bcf7f;  /* Grün für Pause */
         }
         
         .timer-ring-progress.prepare {
-            stroke: #6bcf7f;
+            stroke: #4a90e2;  /* Blau für Vorbereitung */
         }
         
         .timer-time {
@@ -392,6 +395,7 @@
         let isRunning = false;
         let intervalId = null;
         let totalSeconds = 0;
+        let wakeLock = null;
         
         const circumference = 2 * Math.PI * 130;
         
@@ -467,6 +471,10 @@
             document.getElementById('start-icon').textContent = '⏸';
             document.getElementById('start-text').textContent = 'Pause';
             intervalId = setInterval(tick, 1000);
+            
+            // Wake Lock aktivieren (verhindert Screen-Timeout)
+            requestWakeLock();
+            
             updateDisplay();
         }
         
@@ -478,6 +486,9 @@
                 clearInterval(intervalId);
                 intervalId = null;
             }
+            
+            // Wake Lock deaktivieren
+            releaseWakeLock();
         }
         
         function resetTimer() {
@@ -580,23 +591,89 @@
         }
         
         function playBeep() {
-            if (typeof AudioContext !== 'undefined' || typeof webkitAudioContext !== 'undefined') {
+            // Besserer Beep-Ton für iPhone
+            try {
                 const AudioContext = window.AudioContext || window.webkitAudioContext;
                 const audioContext = new AudioContext();
+                
+                // Unlock Audio auf iOS (wichtig!)
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
+                
                 const oscillator = audioContext.createOscillator();
                 const gainNode = audioContext.createGain();
                 
                 oscillator.connect(gainNode);
                 gainNode.connect(audioContext.destination);
                 
-                oscillator.frequency.value = 800;
+                oscillator.frequency.value = 880; // Höherer Ton, besser hörbar
                 oscillator.type = 'sine';
-                gainNode.gain.value = 0.3;
+                gainNode.gain.setValueAtTime(0.5, audioContext.currentTime); // Lauter
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
                 
                 oscillator.start(audioContext.currentTime);
-                oscillator.stop(audioContext.currentTime + 0.2);
+                oscillator.stop(audioContext.currentTime + 0.3);
+                
+                console.log('🔊 Beep gespielt');
+            } catch (err) {
+                console.error('Audio Fehler:', err);
+                // Fallback: Vibration auf Handys
+                if (navigator.vibrate) {
+                    navigator.vibrate(200);
+                }
             }
         }
+        
+        // Wake Lock Funktionen
+        async function requestWakeLock() {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    console.log('✅ Bildschirm bleibt an');
+                    
+                    wakeLock.addEventListener('release', () => {
+                        console.log('Wake Lock wurde freigegeben');
+                    });
+                } else {
+                    console.log('⚠️ Wake Lock API nicht verfügbar');
+                }
+            } catch (err) {
+                console.error('Wake Lock Fehler:', err);
+            }
+        }
+        
+        function releaseWakeLock() {
+            if (wakeLock !== null) {
+                wakeLock.release()
+                    .then(() => {
+                        wakeLock = null;
+                        console.log('Wake Lock deaktiviert');
+                    });
+            }
+        }
+        
+        // Wake Lock bei Sichtbarkeitswechsel wiederherstellen
+        document.addEventListener('visibilitychange', async () => {
+            if (wakeLock !== null && document.visibilityState === 'visible') {
+                await requestWakeLock();
+            }
+        });
+        
+        // Audio Context entsperren beim ersten User-Interaction (wichtig für iOS!)
+        document.addEventListener('touchstart', function unlockAudio() {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            const audioContext = new AudioContext();
+            
+            if (audioContext.state === 'suspended') {
+                audioContext.resume().then(() => {
+                    console.log('🔊 Audio entsperrt');
+                });
+            }
+            
+            // Event listener nur einmal ausführen
+            document.removeEventListener('touchstart', unlockAudio);
+        }, { once: true });
     </script>
 </body>
 </html>
