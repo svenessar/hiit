@@ -6,7 +6,8 @@ services:
     ports:
       - "9012:9012"
     volumes:
-      - ./data:/app/data
+      #- ./data:/app/data
+      - hiit_etc:/app/data
     restart: unless-stopped
     environment:
       - NODE_ENV=production
