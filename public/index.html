@@ -104,15 +104,15 @@
         }
         
         .timer-ring-progress.work {
-            stroke: #ff6b6b;  /* Rot für Training */
+            stroke: #ff3b3b;  /* Knallrot für Training */
         }
         
         .timer-ring-progress.rest {
-            stroke: #6bcf7f;  /* Grün für Pause */
+            stroke: #00ff00;  /* Hellgrün für Pause */
         }
         
         .timer-ring-progress.prepare {
-            stroke: #4a90e2;  /* Blau für Vorbereitung */
+            stroke: #ffaa00;  /* Orange für Vorbereitung */
         }
         
         .timer-time {
@@ -123,6 +123,30 @@
             font-size: 64px;
             font-weight: 300;
             letter-spacing: -2px;
+        }
+        
+        .phase-label {
+            position: absolute;
+            top: 60%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 18px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-top: 10px;
+        }
+        
+        .phase-label.work {
+            color: #ff3b3b;
+        }
+        
+        .phase-label.rest {
+            color: #00ff00;
+        }
+        
+        .phase-label.prepare {
+            color: #ffaa00;
         }
         
         /* Controls */
@@ -317,6 +341,7 @@
                             stroke-dasharray="817" stroke-dashoffset="0"></circle>
                 </svg>
                 <div class="timer-time" id="timer-time">00:25</div>
+                <div class="phase-label" id="phase-label">BEREIT</div>
             </div>
         </div>
 
@@ -544,15 +569,26 @@
             const timeDisplay = document.getElementById('timer-time');
             const roundDisplay = document.getElementById('round-display');
             const totalTimeDisplay = document.getElementById('total-time');
+            const phaseLabel = document.getElementById('phase-label');
             
-            // Ring color
+            // Ring color & Phase Label
             progressRing.className = 'timer-ring-progress';
+            phaseLabel.className = 'phase-label';
+            
             if (currentPhase === 'prepare') {
                 progressRing.classList.add('prepare');
+                phaseLabel.classList.add('prepare');
+                phaseLabel.textContent = 'VORBEREITUNG';
             } else if (currentPhase === 'work') {
                 progressRing.classList.add('work');
+                phaseLabel.classList.add('work');
+                phaseLabel.textContent = 'WORKOUT';
             } else if (currentPhase === 'rest') {
                 progressRing.classList.add('rest');
+                phaseLabel.classList.add('rest');
+                phaseLabel.textContent = 'PAUSE';
+            } else {
+                phaseLabel.textContent = 'BEREIT';
             }
             
             // Progress
@@ -591,12 +627,14 @@
         }
         
         function playBeep() {
-            // Besserer Beep-Ton für iPhone
+            console.log('🔊 Versuche Beep zu spielen...');
+            
+            // Methode 1: Web Audio API mit besserem Timing
             try {
                 const AudioContext = window.AudioContext || window.webkitAudioContext;
                 const audioContext = new AudioContext();
                 
-                // Unlock Audio auf iOS (wichtig!)
+                // Resume falls suspended
                 if (audioContext.state === 'suspended') {
                     audioContext.resume();
                 }
@@ -607,21 +645,56 @@
                 oscillator.connect(gainNode);
                 gainNode.connect(audioContext.destination);
                 
-                oscillator.frequency.value = 880; // Höherer Ton, besser hörbar
-                oscillator.type = 'sine';
-                gainNode.gain.setValueAtTime(0.5, audioContext.currentTime); // Lauter
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                // Sehr hoher, durchdringender Ton
+                oscillator.frequency.value = 1200;
+                oscillator.type = 'square'; // Square wave ist lauter
+                
+                // Laut starten, dann fade out
+                gainNode.gain.setValueAtTime(0.8, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
                 
                 oscillator.start(audioContext.currentTime);
-                oscillator.stop(audioContext.currentTime + 0.3);
+                oscillator.stop(audioContext.currentTime + 0.5);
                 
-                console.log('🔊 Beep gespielt');
+                console.log('✅ Web Audio Beep gespielt');
             } catch (err) {
-                console.error('Audio Fehler:', err);
-                // Fallback: Vibration auf Handys
+                console.error('❌ Web Audio Fehler:', err);
+            }
+            
+            // Methode 2: Vibration (funktioniert immer auf Handys)
+            try {
                 if (navigator.vibrate) {
-                    navigator.vibrate(200);
+                    // Drei kurze Vibrationen
+                    navigator.vibrate([200, 100, 200]);
+                    console.log('✅ Vibration ausgelöst');
                 }
+            } catch (err) {
+                console.error('❌ Vibration Fehler:', err);
+            }
+            
+            // Methode 3: HTML5 Audio als Fallback (erstelle zur Laufzeit)
+            try {
+                // Erstelle einen kurzen Audio-Datenstrom
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const duration = 0.3;
+                const sampleRate = audioCtx.sampleRate;
+                const numSamples = duration * sampleRate;
+                const buffer = audioCtx.createBuffer(1, numSamples, sampleRate);
+                const data = buffer.getChannelData(0);
+                
+                // Generiere Sinus-Welle
+                for (let i = 0; i < numSamples; i++) {
+                    data[i] = Math.sin(2 * Math.PI * 880 * i / sampleRate) * 0.5;
+                }
+                
+                const source = audioCtx.createBufferSource();
+                source.buffer = buffer;
+                source.connect(audioCtx.destination);
+                source.start();
+                
+                console.log('✅ Buffer Audio gespielt');
+            } catch (err) {
+                console.error('❌ Buffer Audio Fehler:', err);
             }
         }
         
@@ -661,19 +734,33 @@
         });
         
         // Audio Context entsperren beim ersten User-Interaction (wichtig für iOS!)
-        document.addEventListener('touchstart', function unlockAudio() {
+        let audioUnlocked = false;
+        
+        function unlockAudio() {
+            if (audioUnlocked) return;
+            
+            console.log('🔓 Versuche Audio zu entsperren...');
+            
             const AudioContext = window.AudioContext || window.webkitAudioContext;
             const audioContext = new AudioContext();
             
             if (audioContext.state === 'suspended') {
                 audioContext.resume().then(() => {
-                    console.log('🔊 Audio entsperrt');
+                    console.log('✅ Audio Context entsperrt');
+                    audioUnlocked = true;
+                    
+                    // Test-Beep
+                    playBeep();
                 });
+            } else {
+                audioUnlocked = true;
+                console.log('✅ Audio bereits entsperrt');
             }
-            
-            // Event listener nur einmal ausführen
-            document.removeEventListener('touchstart', unlockAudio);
-        }, { once: true });
+        }
+        
+        // Unlock bei jedem Touch-Event versuchen
+        document.addEventListener('touchstart', unlockAudio, { passive: true });
+        document.addEventListener('click', unlockAudio, { passive: true });
     </script>
 </body>
 </html>
