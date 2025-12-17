@@ -13,225 +13,388 @@
         
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #1a2332;
+            color: #fff;
             min-height: 100vh;
+        }
+        
+        /* Header */
+        .header {
             display: flex;
-            justify-content: center;
+            justify-content: space-between;
             align-items: center;
             padding: 20px;
+            background: #0f1419;
         }
         
-        .container {
-            background: white;
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            max-width: 500px;
-            width: 100%;
+        .menu-btn, .settings-btn {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px;
         }
         
-        h1 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 30px;
-            font-size: 32px;
-        }
-        
-        .timer-display {
-            background: #f8f9fa;
-            border-radius: 15px;
-            padding: 40px;
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        
-        .timer-display.work {
-            background: #d4edda;
-            border: 3px solid #28a745;
-        }
-        
-        .timer-display.rest {
-            background: #fff3cd;
-            border: 3px solid #ffc107;
-        }
-        
-        .timer-display.prepare {
-            background: #d1ecf1;
-            border: 3px solid #17a2b8;
-        }
-        
-        .phase {
-            font-size: 18px;
-            color: #666;
-            margin-bottom: 10px;
+        .header h1 {
+            font-size: 20px;
             font-weight: 500;
         }
         
-        .time {
-            font-size: 72px;
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 10px;
+        /* Container */
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
         }
         
-        .round {
+        /* Stats Bar */
+        .stats-bar {
+            display: flex;
+            justify-content: space-between;
+            background: #243447;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 40px;
+        }
+        
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 16px;
+        }
+        
+        .stat-icon {
             font-size: 20px;
-            color: #666;
         }
         
+        /* Timer Display */
+        .timer-display {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+        
+        .timer-ring {
+            position: relative;
+            width: 280px;
+            height: 280px;
+            margin: 0 auto 40px;
+        }
+        
+        .timer-ring svg {
+            transform: rotate(-90deg);
+        }
+        
+        .timer-ring-bg {
+            fill: none;
+            stroke: #243447;
+            stroke-width: 20;
+        }
+        
+        .timer-ring-progress {
+            fill: none;
+            stroke: #ff6b6b;
+            stroke-width: 20;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 1s linear;
+        }
+        
+        .timer-ring-progress.work {
+            stroke: #ff6b6b;
+        }
+        
+        .timer-ring-progress.rest {
+            stroke: #ffd93d;
+        }
+        
+        .timer-ring-progress.prepare {
+            stroke: #6bcf7f;
+        }
+        
+        .timer-time {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 64px;
+            font-weight: 300;
+            letter-spacing: -2px;
+        }
+        
+        /* Controls */
         .controls {
             display: flex;
-            gap: 10px;
-            margin-bottom: 30px;
+            gap: 20px;
+            justify-content: center;
         }
         
-        button {
-            flex: 1;
-            padding: 15px;
+        .control-btn {
+            width: 140px;
+            height: 56px;
+            border-radius: 28px;
+            border: none;
             font-size: 16px;
             font-weight: 600;
-            border: none;
-            border-radius: 10px;
             cursor: pointer;
             transition: all 0.3s;
-        }
-        
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
         
         .btn-start {
-            background: #28a745;
+            background: #ff6b6b;
             color: white;
-        }
-        
-        .btn-pause {
-            background: #ffc107;
-            color: #333;
         }
         
         .btn-reset {
-            background: #dc3545;
+            background: transparent;
             color: white;
+            border: 2px solid #fff;
         }
         
-        .settings {
-            background: #f8f9fa;
+        .control-btn:active {
+            transform: scale(0.95);
+        }
+        
+        /* Settings Panel */
+        .settings-panel {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #1a2332;
+            z-index: 1000;
+            overflow-y: auto;
+            animation: slideUp 0.3s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+            }
+            to {
+                transform: translateY(0);
+            }
+        }
+        
+        .settings-panel.active {
+            display: block;
+        }
+        
+        .settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             padding: 20px;
-            border-radius: 10px;
+            background: #0f1419;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
         
-        .settings h3 {
-            margin-bottom: 15px;
-            color: #333;
+        .close-btn {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        
+        .settings-content {
+            padding: 20px;
+            max-width: 500px;
+            margin: 0 auto;
         }
         
         .setting-group {
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
         
         .setting-group label {
             display: block;
-            margin-bottom: 5px;
-            color: #666;
-            font-weight: 500;
+            margin-bottom: 8px;
+            color: #8a92a0;
+            font-size: 14px;
         }
         
         .setting-group input {
             width: 100%;
-            padding: 10px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
+            padding: 16px;
+            background: #243447;
+            border: none;
+            border-radius: 12px;
+            color: #fff;
             font-size: 16px;
         }
         
         .setting-group input:focus {
             outline: none;
-            border-color: #667eea;
+            background: #2d3f54;
         }
         
         .btn-save {
-            background: #667eea;
-            color: white;
             width: 100%;
-            margin-top: 10px;
+            padding: 18px;
+            background: #6bcf7f;
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
         }
         
-        .status {
-            text-align: center;
-            margin-top: 10px;
-            padding: 10px;
-            border-radius: 5px;
-            font-size: 14px;
+        .btn-save:active {
+            transform: scale(0.98);
         }
         
-        .status.success {
-            background: #d4edda;
-            color: #155724;
+        /* Status Message */
+        .status-message {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #6bcf7f;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            display: none;
+            z-index: 2000;
+            animation: fadeIn 0.3s;
         }
         
-        .status.error {
-            background: #f8d7da;
-            color: #721c24;
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        
+        .status-message.show {
+            display: block;
         }
     </style>
 </head>
 <body>
+    <!-- Header -->
+    <div class="header">
+        <button class="menu-btn" onclick="toggleMenu()">☰</button>
+        <h1>HIIT</h1>
+        <button class="settings-btn" onclick="openSettings()">⚙️</button>
+    </div>
+
+    <!-- Main Content -->
     <div class="container">
-        <h1>🏃‍♂️ HIIT Timer</h1>
-        
-        <div class="timer-display" id="display">
-            <div class="phase" id="phase">Bereit?</div>
-            <div class="time" id="time">00:00</div>
-            <div class="round" id="round">Runde 0 / 0</div>
+        <!-- Stats Bar -->
+        <div class="stats-bar">
+            <div class="stat-item">
+                <span class="stat-icon">🔄</span>
+                <span id="round-display">1/8</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-icon">⏱️</span>
+                <span id="total-time">00:00</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-icon">➕</span>
+                <span id="increment">+1</span>
+            </div>
         </div>
-        
+
+        <!-- Timer Display -->
+        <div class="timer-display">
+            <div class="timer-ring">
+                <svg width="280" height="280">
+                    <circle class="timer-ring-bg" cx="140" cy="140" r="130"></circle>
+                    <circle id="progress-ring" class="timer-ring-progress work" cx="140" cy="140" r="130"
+                            stroke-dasharray="817" stroke-dashoffset="0"></circle>
+                </svg>
+                <div class="timer-time" id="timer-time">00:25</div>
+            </div>
+        </div>
+
+        <!-- Controls -->
         <div class="controls">
-            <button class="btn-start" onclick="startTimer()">Start</button>
-            <button class="btn-pause" onclick="pauseTimer()">Pause</button>
-            <button class="btn-reset" onclick="resetTimer()">Reset</button>
-        </div>
-        
-        <div class="settings">
-            <h3>⚙️ Einstellungen</h3>
-            <div class="setting-group">
-                <label>Arbeitszeit (Sekunden):</label>
-                <input type="number" id="workTime" min="1" value="30">
-            </div>
-            <div class="setting-group">
-                <label>Pausenzeit (Sekunden):</label>
-                <input type="number" id="restTime" min="1" value="10">
-            </div>
-            <div class="setting-group">
-                <label>Anzahl Runden:</label>
-                <input type="number" id="rounds" min="1" value="8">
-            </div>
-            <div class="setting-group">
-                <label>Vorbereitungszeit (Sekunden):</label>
-                <input type="number" id="preparationTime" min="0" value="5">
-            </div>
-            <button class="btn-save" onclick="saveSettings()">💾 Einstellungen speichern</button>
-            <div class="status" id="status" style="display: none;"></div>
+            <button class="control-btn btn-start" id="start-btn" onclick="toggleTimer()">
+                <span id="start-icon">▶</span>
+                <span id="start-text">Start</span>
+            </button>
+            <button class="control-btn btn-reset" onclick="resetTimer()">
+                <span>↻</span>
+                <span>Reset</span>
+            </button>
         </div>
     </div>
 
+    <!-- Settings Panel -->
+    <div class="settings-panel" id="settings-panel">
+        <div class="settings-header">
+            <h2>Settings</h2>
+            <button class="close-btn" onclick="closeSettings()">✕</button>
+        </div>
+        
+        <div class="settings-content">
+            <div class="setting-group">
+                <label>Routine Name:</label>
+                <input type="text" id="routine-name" value="HIIT Routine" placeholder="Routine Name">
+            </div>
+            
+            <div class="setting-group">
+                <label>Rounds</label>
+                <input type="number" id="rounds" min="1" value="8">
+            </div>
+            
+            <div class="setting-group">
+                <label>Work Time (s):</label>
+                <input type="number" id="workTime" min="1" value="25">
+            </div>
+            
+            <div class="setting-group">
+                <label>Rest Between Exercises (s):</label>
+                <input type="number" id="restTime" min="1" value="25">
+            </div>
+            
+            <div class="setting-group">
+                <label>Rest Between Rounds (s):</label>
+                <input type="number" id="roundRestTime" min="0" value="25">
+            </div>
+            
+            <div class="setting-group">
+                <label>Preparation Time (s):</label>
+                <input type="number" id="preparationTime" min="0" value="5">
+            </div>
+            
+            <button class="btn-save" onclick="saveSettings()">💾 Save routine</button>
+        </div>
+    </div>
+
+    <!-- Status Message -->
+    <div class="status-message" id="status-message"></div>
+
     <script>
         let settings = {
-            workTime: 30,
-            restTime: 10,
+            routineName: 'HIIT Routine',
+            workTime: 25,
+            restTime: 25,
             rounds: 8,
+            roundRestTime: 25,
             preparationTime: 5
         };
         
-        let currentPhase = 'idle'; // idle, prepare, work, rest
+        let currentPhase = 'idle';
         let currentRound = 0;
         let timeLeft = 0;
+        let totalTime = 0;
         let isRunning = false;
         let intervalId = null;
-        let audio = null;
+        let totalSeconds = 0;
         
-        // Lade Einstellungen beim Start
+        const circumference = 2 * Math.PI * 130;
+        
         loadSettings();
         
         function loadSettings() {
@@ -239,9 +402,11 @@
                 .then(r => r.json())
                 .then(data => {
                     settings = data;
+                    document.getElementById('routine-name').value = settings.routineName || 'HIIT Routine';
                     document.getElementById('workTime').value = settings.workTime;
                     document.getElementById('restTime').value = settings.restTime;
                     document.getElementById('rounds').value = settings.rounds;
+                    document.getElementById('roundRestTime').value = settings.roundRestTime || 25;
                     document.getElementById('preparationTime').value = settings.preparationTime;
                     updateDisplay();
                 })
@@ -249,9 +414,11 @@
         }
         
         function saveSettings() {
+            settings.routineName = document.getElementById('routine-name').value;
             settings.workTime = parseInt(document.getElementById('workTime').value);
             settings.restTime = parseInt(document.getElementById('restTime').value);
             settings.rounds = parseInt(document.getElementById('rounds').value);
+            settings.roundRestTime = parseInt(document.getElementById('roundRestTime').value);
             settings.preparationTime = parseInt(document.getElementById('preparationTime').value);
             
             fetch('/api/settings', {
@@ -261,41 +428,52 @@
             })
             .then(r => r.json())
             .then(() => {
-                showStatus('Einstellungen gespeichert! ✅', 'success');
+                showStatus('Einstellungen gespeichert! ✅');
+                closeSettings();
                 resetTimer();
             })
             .catch(err => {
-                showStatus('Fehler beim Speichern ❌', 'error');
-                console.error('Fehler beim Speichern:', err);
+                showStatus('Fehler beim Speichern ❌');
+                console.error(err);
             });
         }
         
-        function showStatus(message, type) {
-            const status = document.getElementById('status');
+        function showStatus(message) {
+            const status = document.getElementById('status-message');
             status.textContent = message;
-            status.className = 'status ' + type;
-            status.style.display = 'block';
+            status.classList.add('show');
             setTimeout(() => {
-                status.style.display = 'none';
-            }, 3000);
+                status.classList.remove('show');
+            }, 2000);
+        }
+        
+        function toggleTimer() {
+            if (isRunning) {
+                pauseTimer();
+            } else {
+                startTimer();
+            }
         }
         
         function startTimer() {
-            if (isRunning) return;
-            
             if (currentPhase === 'idle') {
                 currentPhase = 'prepare';
                 currentRound = 0;
                 timeLeft = settings.preparationTime;
+                totalSeconds = 0;
             }
             
             isRunning = true;
+            document.getElementById('start-icon').textContent = '⏸';
+            document.getElementById('start-text').textContent = 'Pause';
             intervalId = setInterval(tick, 1000);
             updateDisplay();
         }
         
         function pauseTimer() {
             isRunning = false;
+            document.getElementById('start-icon').textContent = '▶';
+            document.getElementById('start-text').textContent = 'Start';
             if (intervalId) {
                 clearInterval(intervalId);
                 intervalId = null;
@@ -307,11 +485,15 @@
             currentPhase = 'idle';
             currentRound = 0;
             timeLeft = 0;
+            totalSeconds = 0;
+            document.getElementById('start-icon').textContent = '▶';
+            document.getElementById('start-text').textContent = 'Start';
             updateDisplay();
         }
         
         function tick() {
             timeLeft--;
+            totalSeconds++;
             
             if (timeLeft <= 0) {
                 nextPhase();
@@ -328,10 +510,9 @@
                 playBeep();
             } else if (currentPhase === 'work') {
                 if (currentRound >= settings.rounds) {
-                    // Fertig!
                     pauseTimer();
                     currentPhase = 'idle';
-                    showStatus('Training abgeschlossen! 🎉', 'success');
+                    showStatus('Training abgeschlossen! 🎉');
                     playBeep();
                     playBeep();
                     return;
@@ -348,37 +529,57 @@
         }
         
         function updateDisplay() {
-            const display = document.getElementById('display');
-            const phaseEl = document.getElementById('phase');
-            const timeEl = document.getElementById('time');
-            const roundEl = document.getElementById('round');
+            const progressRing = document.getElementById('progress-ring');
+            const timeDisplay = document.getElementById('timer-time');
+            const roundDisplay = document.getElementById('round-display');
+            const totalTimeDisplay = document.getElementById('total-time');
             
-            // Phase anzeigen
-            display.className = 'timer-display';
+            // Ring color
+            progressRing.className = 'timer-ring-progress';
             if (currentPhase === 'prepare') {
-                phaseEl.textContent = '🟦 VORBEREITUNG';
-                display.classList.add('prepare');
+                progressRing.classList.add('prepare');
             } else if (currentPhase === 'work') {
-                phaseEl.textContent = '🟢 TRAINING';
-                display.classList.add('work');
+                progressRing.classList.add('work');
             } else if (currentPhase === 'rest') {
-                phaseEl.textContent = '🟡 PAUSE';
-                display.classList.add('rest');
-            } else {
-                phaseEl.textContent = 'Bereit?';
+                progressRing.classList.add('rest');
             }
             
-            // Zeit anzeigen
+            // Progress
+            let maxTime = settings.workTime;
+            if (currentPhase === 'prepare') maxTime = settings.preparationTime;
+            else if (currentPhase === 'rest') maxTime = settings.restTime;
+            
+            const progress = maxTime > 0 ? (maxTime - timeLeft) / maxTime : 0;
+            const offset = circumference - (progress * circumference);
+            progressRing.style.strokeDashoffset = offset;
+            
+            // Time
             const minutes = Math.floor(timeLeft / 60);
             const seconds = timeLeft % 60;
-            timeEl.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            timeDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
             
-            // Runden anzeigen
-            roundEl.textContent = `Runde ${currentRound} / ${settings.rounds}`;
+            // Round
+            roundDisplay.textContent = `${currentRound}/${settings.rounds}`;
+            
+            // Total time
+            const totalMin = Math.floor(totalSeconds / 60);
+            const totalSec = totalSeconds % 60;
+            totalTimeDisplay.textContent = `${String(totalMin).padStart(2, '0')}:${String(totalSec).padStart(2, '0')}`;
+        }
+        
+        function openSettings() {
+            document.getElementById('settings-panel').classList.add('active');
+        }
+        
+        function closeSettings() {
+            document.getElementById('settings-panel').classList.remove('active');
+        }
+        
+        function toggleMenu() {
+            showStatus('Menü wird noch implementiert');
         }
         
         function playBeep() {
-            // Einfacher Beep-Ton
             if (typeof AudioContext !== 'undefined' || typeof webkitAudioContext !== 'undefined') {
                 const AudioContext = window.AudioContext || window.webkitAudioContext;
                 const audioContext = new AudioContext();
