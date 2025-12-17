@@ -1,3 +1,22 @@
+# Multi-stage Build - Richtig gemacht
+FROM node:18-alpine AS builder
+
+WORKDIR /app
+
+# Kopiere package.json
+COPY package.json ./
+
+# Installiere ALLE dependencies (inkl. devDependencies für Build)
+RUN npm install --legacy-peer-deps
+
+# Kopiere Source-Code
+COPY . .
+
+# Baue die App mit Vite
+ENV NODE_OPTIONS="--max-old-space-size=1024"
+RUN npm run build
+
+# Production Stage
 FROM node:18-alpine
 
 WORKDIR /app
@@ -5,20 +24,20 @@ WORKDIR /app
 # Kopiere package.json
 COPY package.json ./
 
-# Installiere Dependencies mit Fehlertoleranz
-RUN npm install --legacy-peer-deps || npm install --force
+# Installiere NUR production dependencies
+RUN npm install --production --legacy-peer-deps
 
-# Kopiere alle Dateien
-COPY . .
+# Kopiere Server
+COPY server.js ./
 
-# Erstelle Data-Verzeichnis
+# Kopiere gebaute Dateien vom Builder
+COPY --from=builder /app/dist ./dist
+
+# Erstelle data Verzeichnis
 RUN mkdir -p /app/data
 
-# Port exponieren
 EXPOSE 9012
 
-# Environment
 ENV NODE_ENV=production
 
-# Starte Server
 CMD ["node", "server.js"]
