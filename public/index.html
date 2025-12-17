@@ -626,53 +626,152 @@
             showStatus('Menü wird noch implementiert');
         }
         
-        // iOS-freundliche Audio-Funktion
-        let audioContext = null;
-        let audioUnlocked = false;
+        // HTML5 Audio - VIEL zuverlässiger auf iOS!
+        let workoutAudio = null;
+        let restAudio = null;
+        let beepAudio = null;
+        let audioInitialized = false;
         
-        function initAudio() {
-            if (audioContext) return audioContext;
+        function createAudioFiles() {
+            if (audioInitialized) return;
+            
+            console.log('🎵 Erstelle Audio-Dateien...');
             
             try {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                audioContext = new AudioContext();
-                console.log('🎵 Audio Context erstellt');
-                return audioContext;
+                // Erstelle Audio Elements
+                workoutAudio = new Audio();
+                restAudio = new Audio();
+                beepAudio = new Audio();
+                
+                // Workout Sound: Zwei kurze hohe Beeps
+                workoutAudio.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';
+                
+                // Rest Sound: Ein langer tiefer Beep
+                restAudio.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';
+                
+                // Standard Beep
+                beepAudio.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';
+                
+                // Preload
+                workoutAudio.load();
+                restAudio.load();
+                beepAudio.load();
+                
+                audioInitialized = true;
+                console.log('✅ Audio-Dateien erstellt!');
+                
             } catch (err) {
-                console.error('❌ Audio Context Fehler:', err);
-                return null;
+                console.error('❌ Audio-Dateien Fehler:', err);
+            }
+        }
+        
+        // Bessere Methode: Generiere echte WAV-Daten
+        function generateWavData(frequency, duration, type = 'workout') {
+            const sampleRate = 22050; // Niedrigere Sample-Rate für kleinere Dateien
+            const numSamples = Math.floor(sampleRate * duration);
+            const buffer = new ArrayBuffer(44 + numSamples * 2);
+            const view = new DataView(buffer);
+            
+            // WAV Header
+            const writeString = (offset, string) => {
+                for (let i = 0; i < string.length; i++) {
+                    view.setUint8(offset + i, string.charCodeAt(i));
+                }
+            };
+            
+            writeString(0, 'RIFF');
+            view.setUint32(4, 36 + numSamples * 2, true);
+            writeString(8, 'WAVE');
+            writeString(12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true); // PCM
+            view.setUint16(22, 1, true); // Mono
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * 2, true);
+            view.setUint16(32, 2, true);
+            view.setUint16(34, 16, true);
+            writeString(36, 'data');
+            view.setUint32(40, numSamples * 2, true);
+            
+            // Audio-Daten
+            const volume = 0.8;
+            for (let i = 0; i < numSamples; i++) {
+                let sample;
+                
+                if (type === 'workout') {
+                    // Square wave für Workout (hart & laut)
+                    sample = Math.sign(Math.sin(2 * Math.PI * frequency * i / sampleRate));
+                } else if (type === 'rest') {
+                    // Sine wave für Rest (weich)
+                    sample = Math.sin(2 * Math.PI * frequency * i / sampleRate);
+                } else {
+                    // Standard Beep
+                    sample = Math.sin(2 * Math.PI * frequency * i / sampleRate);
+                }
+                
+                // Envelope (fade out am Ende)
+                const envelope = i < numSamples * 0.1 ? i / (numSamples * 0.1) : 
+                                i > numSamples * 0.7 ? (numSamples - i) / (numSamples * 0.3) : 1;
+                
+                sample *= volume * envelope;
+                view.setInt16(44 + i * 2, sample * 32767, true);
+            }
+            
+            const blob = new Blob([buffer], { type: 'audio/wav' });
+            return URL.createObjectURL(blob);
+        }
+        
+        function initAudioFiles() {
+            if (audioInitialized) return;
+            
+            console.log('🎵 Generiere Audio-Dateien...');
+            
+            try {
+                workoutAudio = new Audio();
+                restAudio = new Audio();
+                beepAudio = new Audio();
+                
+                // Generiere unterschiedliche Sounds
+                workoutAudio.src = generateWavData(1400, 0.15, 'workout'); // Kurz & hoch
+                restAudio.src = generateWavData(600, 0.4, 'rest'); // Lang & tief
+                beepAudio.src = generateWavData(1000, 0.2, 'beep'); // Standard
+                
+                // Wichtig für iOS: preload
+                workoutAudio.load();
+                restAudio.load();
+                beepAudio.load();
+                
+                audioInitialized = true;
+                console.log('✅ Audio-Dateien generiert!');
+                
+                return true;
+            } catch (err) {
+                console.error('❌ Audio-Generation Fehler:', err);
+                return false;
             }
         }
         
         function playBeep() {
             console.log('🔊 Standard Beep...');
             
-            const ctx = initAudio();
-            if (!ctx) {
-                vibrate([200, 100, 200]);
-                return;
+            if (!audioInitialized) {
+                initAudioFiles();
             }
             
             try {
-                if (ctx.state === 'suspended') {
-                    ctx.resume();
+                if (beepAudio) {
+                    beepAudio.currentTime = 0;
+                    const playPromise = beepAudio.play();
+                    
+                    if (playPromise !== undefined) {
+                        playPromise
+                            .then(() => console.log('✅ Beep gespielt'))
+                            .catch(err => {
+                                console.error('❌ Beep Play Fehler:', err);
+                                vibrate([200, 100, 200]);
+                            });
+                    }
                 }
-                
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                
-                osc.frequency.value = 1200;
-                osc.type = 'square';
-                gain.gain.value = 0.8;
-                
-                const now = ctx.currentTime;
-                osc.start(now);
-                osc.stop(now + 0.3);
-                
-                console.log('✅ Standard Beep gespielt');
             } catch (err) {
                 console.error('❌ Beep Fehler:', err);
                 vibrate([200, 100, 200]);
@@ -682,36 +781,33 @@
         function playWorkoutBeep() {
             console.log('🔴 WORKOUT Beep!');
             
-            const ctx = initAudio();
-            if (!ctx) {
-                vibrate([150, 100, 150]);
-                return;
+            if (!audioInitialized) {
+                initAudioFiles();
             }
             
             try {
-                if (ctx.state === 'suspended') {
-                    ctx.resume();
+                if (workoutAudio) {
+                    workoutAudio.currentTime = 0;
+                    const playPromise = workoutAudio.play();
+                    
+                    if (playPromise !== undefined) {
+                        playPromise
+                            .then(() => {
+                                console.log('✅ Workout Beep gespielt');
+                                // Zweiter Beep nach kurzer Pause
+                                setTimeout(() => {
+                                    workoutAudio.currentTime = 0;
+                                    workoutAudio.play().catch(err => console.error('2. Beep Fehler:', err));
+                                }, 200);
+                            })
+                            .catch(err => {
+                                console.error('❌ Workout Play Fehler:', err);
+                                vibrate([150, 100, 150]);
+                            });
+                    }
+                } else {
+                    console.error('⚠️ workoutAudio nicht initialisiert!');
                 }
-                
-                // Zwei kurze laute Beeps
-                for (let i = 0; i < 2; i++) {
-                    const osc = ctx.createOscillator();
-                    const gain = ctx.createGain();
-                    
-                    osc.connect(gain);
-                    gain.connect(ctx.destination);
-                    
-                    osc.frequency.value = 1400;
-                    osc.type = 'square';
-                    gain.gain.value = 0.9;
-                    
-                    const now = ctx.currentTime;
-                    const startTime = now + (i * 0.2);
-                    osc.start(startTime);
-                    osc.stop(startTime + 0.15);
-                }
-                
-                console.log('✅ Workout Beep gespielt');
             } catch (err) {
                 console.error('❌ Workout Beep Fehler:', err);
             }
@@ -722,37 +818,26 @@
         function playRestBeep() {
             console.log('🟢 PAUSE Beep!');
             
-            const ctx = initAudio();
-            if (!ctx) {
-                vibrate(300);
-                return;
+            if (!audioInitialized) {
+                initAudioFiles();
             }
             
             try {
-                if (ctx.state === 'suspended') {
-                    ctx.resume();
+                if (restAudio) {
+                    restAudio.currentTime = 0;
+                    const playPromise = restAudio.play();
+                    
+                    if (playPromise !== undefined) {
+                        playPromise
+                            .then(() => console.log('✅ Rest Beep gespielt'))
+                            .catch(err => {
+                                console.error('❌ Rest Play Fehler:', err);
+                                vibrate(300);
+                            });
+                    }
+                } else {
+                    console.error('⚠️ restAudio nicht initialisiert!');
                 }
-                
-                // Drei absteigende Töne
-                const frequencies = [800, 650, 500];
-                frequencies.forEach((freq, i) => {
-                    const osc = ctx.createOscillator();
-                    const gain = ctx.createGain();
-                    
-                    osc.connect(gain);
-                    gain.connect(ctx.destination);
-                    
-                    osc.frequency.value = freq;
-                    osc.type = 'sine';
-                    gain.gain.value = 0.7;
-                    
-                    const now = ctx.currentTime;
-                    const startTime = now + (i * 0.25);
-                    osc.start(startTime);
-                    osc.stop(startTime + 0.2);
-                });
-                
-                console.log('✅ Rest Beep gespielt');
             } catch (err) {
                 console.error('❌ Rest Beep Fehler:', err);
             }
@@ -806,79 +891,58 @@
             }
         });
         
-        // AGGRESSIVE Audio Unlock für iOS
+        // Audio Unlock für iOS - HTML5 Audio ist einfacher!
+        let audioUnlocked = false;
+        
         function unlockAudio() {
             if (audioUnlocked) {
-                console.log('⚠️ Audio bereits entsperrt');
                 return;
             }
             
-            console.log('🔓 UNLOCK AUDIO für iOS...');
+            console.log('🔓 Audio entsperren...');
             
-            const ctx = initAudio();
-            if (!ctx) {
-                console.error('❌ Kein Audio Context!');
-                return;
-            }
-            
-            // iOS braucht einen echten Sound beim User-Interaction!
-            try {
-                if (ctx.state === 'suspended') {
-                    console.log('🔄 Resume Audio Context...');
-                    ctx.resume().then(() => {
-                        console.log('✅ Audio Context resumed');
-                    });
+            // Initialisiere Audio-Dateien
+            if (initAudioFiles()) {
+                // Spiele einen stillen Test-Sound
+                if (beepAudio) {
+                    beepAudio.volume = 0.5;
+                    beepAudio.play()
+                        .then(() => {
+                            audioUnlocked = true;
+                            console.log('✅✅✅ AUDIO ENTSPERRT! ✅✅✅');
+                            showStatus('🔊 Audio aktiviert!');
+                            
+                            // Hörbarer Test-Beep nach 0.5s
+                            setTimeout(() => {
+                                beepAudio.volume = 0.8;
+                                beepAudio.currentTime = 0;
+                                beepAudio.play()
+                                    .then(() => console.log('🧪 Test-Beep erfolgreich!'))
+                                    .catch(err => console.error('Test-Beep Fehler:', err));
+                            }, 500);
+                        })
+                        .catch(err => {
+                            console.error('❌ Audio Unlock Fehler:', err);
+                            console.log('💡 Versuche es nochmal beim nächsten Touch...');
+                        });
                 }
-                
-                // Spiele einen stillen Ton um iOS Audio zu entsperren
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                
-                // Kurzer hörbarer Test-Beep
-                osc.frequency.value = 880;
-                osc.type = 'sine';
-                gain.gain.value = 0.3;
-                
-                const now = ctx.currentTime;
-                osc.start(now);
-                osc.stop(now + 0.1);
-                
-                audioUnlocked = true;
-                console.log('✅✅✅ AUDIO ENTSPERRT! ✅✅✅');
-                
-                // Zeige dem User dass es funktioniert hat
-                showStatus('🔊 Audio aktiviert!');
-                
-                // Spiele einen Test-Beep nach 0.5s
-                setTimeout(() => {
-                    console.log('🧪 Test-Beep...');
-                    playBeep();
-                }, 500);
-                
-            } catch (err) {
-                console.error('❌ Audio Unlock Fehler:', err);
             }
         }
         
-        // Unlock bei JEDEM Touch und Click
-        document.addEventListener('touchstart', unlockAudio, { passive: true });
-        document.addEventListener('touchend', unlockAudio, { passive: true });
-        document.addEventListener('click', unlockAudio, { passive: true });
+        // Unlock bei verschiedenen Events
+        document.addEventListener('touchstart', unlockAudio, { once: true, passive: true });
+        document.addEventListener('click', unlockAudio, { once: true, passive: true });
         
-        // Auch bei Button-Clicks
+        // Auch beim Laden versuchen (falls User klickt bevor Script läuft)
         window.addEventListener('load', () => {
-            console.log('📱 App geladen - bereit für Audio Unlock');
-            // Unlock auch beim Start-Button
-            const startBtn = document.getElementById('start-btn');
-            if (startBtn) {
-                startBtn.addEventListener('click', () => {
-                    unlockAudio();
-                    console.log('▶️ Start Button geklickt');
-                });
-            }
+            console.log('📱 App geladen - warte auf ersten Touch für Audio');
+            
+            // Zeige Hinweis
+            setTimeout(() => {
+                if (!audioUnlocked) {
+                    showStatus('👆 Tippe einmal um Audio zu aktivieren');
+                }
+            }, 1000);
         });
     </script>
 </body>
