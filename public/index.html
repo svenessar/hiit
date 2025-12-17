@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HIIT Timer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 500px;
+            width: 100%;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 32px;
+        }
+        
+        .timer-display {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .timer-display.work {
+            background: #d4edda;
+            border: 3px solid #28a745;
+        }
+        
+        .timer-display.rest {
+            background: #fff3cd;
+            border: 3px solid #ffc107;
+        }
+        
+        .timer-display.prepare {
+            background: #d1ecf1;
+            border: 3px solid #17a2b8;
+        }
+        
+        .phase {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+        
+        .time {
+            font-size: 72px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .round {
+            font-size: 20px;
+            color: #666;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        
+        button {
+            flex: 1;
+            padding: 15px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .btn-start {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-pause {
+            background: #ffc107;
+            color: #333;
+        }
+        
+        .btn-reset {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .settings {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        .settings h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .setting-group {
+            margin-bottom: 15px;
+        }
+        
+        .setting-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .setting-group input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        
+        .setting-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn-save {
+            background: #667eea;
+            color: white;
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        .status {
+            text-align: center;
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏃‍♂️ HIIT Timer</h1>
+        
+        <div class="timer-display" id="display">
+            <div class="phase" id="phase">Bereit?</div>
+            <div class="time" id="time">00:00</div>
+            <div class="round" id="round">Runde 0 / 0</div>
+        </div>
+        
+        <div class="controls">
+            <button class="btn-start" onclick="startTimer()">Start</button>
+            <button class="btn-pause" onclick="pauseTimer()">Pause</button>
+            <button class="btn-reset" onclick="resetTimer()">Reset</button>
+        </div>
+        
+        <div class="settings">
+            <h3>⚙️ Einstellungen</h3>
+            <div class="setting-group">
+                <label>Arbeitszeit (Sekunden):</label>
+                <input type="number" id="workTime" min="1" value="30">
+            </div>
+            <div class="setting-group">
+                <label>Pausenzeit (Sekunden):</label>
+                <input type="number" id="restTime" min="1" value="10">
+            </div>
+            <div class="setting-group">
+                <label>Anzahl Runden:</label>
+                <input type="number" id="rounds" min="1" value="8">
+            </div>
+            <div class="setting-group">
+                <label>Vorbereitungszeit (Sekunden):</label>
+                <input type="number" id="preparationTime" min="0" value="5">
+            </div>
+            <button class="btn-save" onclick="saveSettings()">💾 Einstellungen speichern</button>
+            <div class="status" id="status" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        let settings = {
+            workTime: 30,
+            restTime: 10,
+            rounds: 8,
+            preparationTime: 5
+        };
+        
+        let currentPhase = 'idle'; // idle, prepare, work, rest
+        let currentRound = 0;
+        let timeLeft = 0;
+        let isRunning = false;
+        let intervalId = null;
+        let audio = null;
+        
+        // Lade Einstellungen beim Start
+        loadSettings();
+        
+        function loadSettings() {
+            fetch('/api/settings')
+                .then(r => r.json())
+                .then(data => {
+                    settings = data;
+                    document.getElementById('workTime').value = settings.workTime;
+                    document.getElementById('restTime').value = settings.restTime;
+                    document.getElementById('rounds').value = settings.rounds;
+                    document.getElementById('preparationTime').value = settings.preparationTime;
+                    updateDisplay();
+                })
+                .catch(err => console.error('Fehler beim Laden:', err));
+        }
+        
+        function saveSettings() {
+            settings.workTime = parseInt(document.getElementById('workTime').value);
+            settings.restTime = parseInt(document.getElementById('restTime').value);
+            settings.rounds = parseInt(document.getElementById('rounds').value);
+            settings.preparationTime = parseInt(document.getElementById('preparationTime').value);
+            
+            fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(settings)
+            })
+            .then(r => r.json())
+            .then(() => {
+                showStatus('Einstellungen gespeichert! ✅', 'success');
+                resetTimer();
+            })
+            .catch(err => {
+                showStatus('Fehler beim Speichern ❌', 'error');
+                console.error('Fehler beim Speichern:', err);
+            });
+        }
+        
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = 'status ' + type;
+            status.style.display = 'block';
+            setTimeout(() => {
+                status.style.display = 'none';
+            }, 3000);
+        }
+        
+        function startTimer() {
+            if (isRunning) return;
+            
+            if (currentPhase === 'idle') {
+                currentPhase = 'prepare';
+                currentRound = 0;
+                timeLeft = settings.preparationTime;
+            }
+            
+            isRunning = true;
+            intervalId = setInterval(tick, 1000);
+            updateDisplay();
+        }
+        
+        function pauseTimer() {
+            isRunning = false;
+            if (intervalId) {
+                clearInterval(intervalId);
+                intervalId = null;
+            }
+        }
+        
+        function resetTimer() {
+            pauseTimer();
+            currentPhase = 'idle';
+            currentRound = 0;
+            timeLeft = 0;
+            updateDisplay();
+        }
+        
+        function tick() {
+            timeLeft--;
+            
+            if (timeLeft <= 0) {
+                nextPhase();
+            }
+            
+            updateDisplay();
+        }
+        
+        function nextPhase() {
+            if (currentPhase === 'prepare') {
+                currentPhase = 'work';
+                currentRound = 1;
+                timeLeft = settings.workTime;
+                playBeep();
+            } else if (currentPhase === 'work') {
+                if (currentRound >= settings.rounds) {
+                    // Fertig!
+                    pauseTimer();
+                    currentPhase = 'idle';
+                    showStatus('Training abgeschlossen! 🎉', 'success');
+                    playBeep();
+                    playBeep();
+                    return;
+                }
+                currentPhase = 'rest';
+                timeLeft = settings.restTime;
+                playBeep();
+            } else if (currentPhase === 'rest') {
+                currentPhase = 'work';
+                currentRound++;
+                timeLeft = settings.workTime;
+                playBeep();
+            }
+        }
+        
+        function updateDisplay() {
+            const display = document.getElementById('display');
+            const phaseEl = document.getElementById('phase');
+            const timeEl = document.getElementById('time');
+            const roundEl = document.getElementById('round');
+            
+            // Phase anzeigen
+            display.className = 'timer-display';
+            if (currentPhase === 'prepare') {
+                phaseEl.textContent = '🟦 VORBEREITUNG';
+                display.classList.add('prepare');
+            } else if (currentPhase === 'work') {
+                phaseEl.textContent = '🟢 TRAINING';
+                display.classList.add('work');
+            } else if (currentPhase === 'rest') {
+                phaseEl.textContent = '🟡 PAUSE';
+                display.classList.add('rest');
+            } else {
+                phaseEl.textContent = 'Bereit?';
+            }
+            
+            // Zeit anzeigen
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            timeEl.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            
+            // Runden anzeigen
+            roundEl.textContent = `Runde ${currentRound} / ${settings.rounds}`;
+        }
+        
+        function playBeep() {
+            // Einfacher Beep-Ton
+            if (typeof AudioContext !== 'undefined' || typeof webkitAudioContext !== 'undefined') {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                const audioContext = new AudioContext();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.value = 800;
+                oscillator.type = 'sine';
+                gainNode.gain.value = 0.3;
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.2);
+            }
+        }
+    </script>
+</body>
+</html>
