@@ -2,9 +2,7 @@ version: '3.8'
 
 services:
   hiit-timer:
-    build:
-      context: .
-      shm_size: '256m'
+    build: .
     ports:
       - "9012:9012"
     volumes:
@@ -12,7 +10,6 @@ services:
     restart: unless-stopped
     environment:
       - NODE_ENV=production
-    mem_limit: 512m
       
 volumes:
   hiit_data:
