@@ -626,155 +626,149 @@
             showStatus('Menü wird noch implementiert');
         }
         
-        function playBeep() {
-            console.log('🔊 Versuche Beep zu spielen...');
+        // iOS-freundliche Audio-Funktion
+        let audioContext = null;
+        let audioUnlocked = false;
+        
+        function initAudio() {
+            if (audioContext) return audioContext;
             
-            // Methode 1: Web Audio API mit besserem Timing
             try {
                 const AudioContext = window.AudioContext || window.webkitAudioContext;
-                const audioContext = new AudioContext();
-                
-                // Resume falls suspended
-                if (audioContext.state === 'suspended') {
-                    audioContext.resume();
-                }
-                
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
-                
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                
-                // Sehr hoher, durchdringender Ton
-                oscillator.frequency.value = 1200;
-                oscillator.type = 'square'; // Square wave ist lauter
-                
-                // Laut starten, dann fade out
-                gainNode.gain.setValueAtTime(0.8, audioContext.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-                
-                oscillator.start(audioContext.currentTime);
-                oscillator.stop(audioContext.currentTime + 0.5);
-                
-                console.log('✅ Web Audio Beep gespielt');
+                audioContext = new AudioContext();
+                console.log('🎵 Audio Context erstellt');
+                return audioContext;
             } catch (err) {
-                console.error('❌ Web Audio Fehler:', err);
+                console.error('❌ Audio Context Fehler:', err);
+                return null;
+            }
+        }
+        
+        function playBeep() {
+            console.log('🔊 Standard Beep...');
+            
+            const ctx = initAudio();
+            if (!ctx) {
+                vibrate([200, 100, 200]);
+                return;
             }
             
-            // Methode 2: Vibration (funktioniert immer auf Handys)
             try {
-                if (navigator.vibrate) {
-                    // Drei kurze Vibrationen
-                    navigator.vibrate([200, 100, 200]);
-                    console.log('✅ Vibration ausgelöst');
+                if (ctx.state === 'suspended') {
+                    ctx.resume();
                 }
+                
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                
+                osc.frequency.value = 1200;
+                osc.type = 'square';
+                gain.gain.value = 0.8;
+                
+                const now = ctx.currentTime;
+                osc.start(now);
+                osc.stop(now + 0.3);
+                
+                console.log('✅ Standard Beep gespielt');
             } catch (err) {
-                console.error('❌ Vibration Fehler:', err);
+                console.error('❌ Beep Fehler:', err);
+                vibrate([200, 100, 200]);
             }
         }
         
         function playWorkoutBeep() {
             console.log('🔴 WORKOUT Beep!');
             
+            const ctx = initAudio();
+            if (!ctx) {
+                vibrate([150, 100, 150]);
+                return;
+            }
+            
             try {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                const audioContext = new AudioContext();
-                
-                if (audioContext.state === 'suspended') {
-                    audioContext.resume();
+                if (ctx.state === 'suspended') {
+                    ctx.resume();
                 }
                 
-                // Zwei schnelle hohe Töne - "LOS! LOS!"
-                const oscillator1 = audioContext.createOscillator();
-                const oscillator2 = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
-                
-                oscillator1.connect(gainNode);
-                oscillator2.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                
-                // Hoher, energischer Ton
-                oscillator1.frequency.value = 1400;
-                oscillator2.frequency.value = 1400;
-                oscillator1.type = 'square';
-                oscillator2.type = 'square';
-                
-                gainNode.gain.setValueAtTime(0.9, audioContext.currentTime);
-                
-                // Erster Beep
-                oscillator1.start(audioContext.currentTime);
-                oscillator1.stop(audioContext.currentTime + 0.15);
-                
-                // Zweiter Beep
-                oscillator2.start(audioContext.currentTime + 0.2);
-                oscillator2.stop(audioContext.currentTime + 0.35);
+                // Zwei kurze laute Beeps
+                for (let i = 0; i < 2; i++) {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    
+                    osc.frequency.value = 1400;
+                    osc.type = 'square';
+                    gain.gain.value = 0.9;
+                    
+                    const now = ctx.currentTime;
+                    const startTime = now + (i * 0.2);
+                    osc.start(startTime);
+                    osc.stop(startTime + 0.15);
+                }
                 
                 console.log('✅ Workout Beep gespielt');
             } catch (err) {
                 console.error('❌ Workout Beep Fehler:', err);
             }
             
-            // Vibration: Zwei kräftige Pulse
-            try {
-                if (navigator.vibrate) {
-                    navigator.vibrate([150, 100, 150]);
-                }
-            } catch (err) {}
+            vibrate([150, 100, 150]);
         }
         
         function playRestBeep() {
             console.log('🟢 PAUSE Beep!');
             
+            const ctx = initAudio();
+            if (!ctx) {
+                vibrate(300);
+                return;
+            }
+            
             try {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                const audioContext = new AudioContext();
-                
-                if (audioContext.state === 'suspended') {
-                    audioContext.resume();
+                if (ctx.state === 'suspended') {
+                    ctx.resume();
                 }
                 
-                // Drei absteigende Töne - "Entspann dich..."
-                const oscillator1 = audioContext.createOscillator();
-                const oscillator2 = audioContext.createOscillator();
-                const oscillator3 = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
-                
-                oscillator1.connect(gainNode);
-                oscillator2.connect(gainNode);
-                oscillator3.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                
-                // Absteigende Frequenzen - beruhigend
-                oscillator1.frequency.value = 800;
-                oscillator2.frequency.value = 650;
-                oscillator3.frequency.value = 500;
-                oscillator1.type = 'sine';
-                oscillator2.type = 'sine';
-                oscillator3.type = 'sine';
-                
-                gainNode.gain.setValueAtTime(0.7, audioContext.currentTime);
-                
                 // Drei absteigende Töne
-                oscillator1.start(audioContext.currentTime);
-                oscillator1.stop(audioContext.currentTime + 0.2);
-                
-                oscillator2.start(audioContext.currentTime + 0.25);
-                oscillator2.stop(audioContext.currentTime + 0.45);
-                
-                oscillator3.start(audioContext.currentTime + 0.5);
-                oscillator3.stop(audioContext.currentTime + 0.7);
+                const frequencies = [800, 650, 500];
+                frequencies.forEach((freq, i) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    
+                    osc.frequency.value = freq;
+                    osc.type = 'sine';
+                    gain.gain.value = 0.7;
+                    
+                    const now = ctx.currentTime;
+                    const startTime = now + (i * 0.25);
+                    osc.start(startTime);
+                    osc.stop(startTime + 0.2);
+                });
                 
                 console.log('✅ Rest Beep gespielt');
             } catch (err) {
                 console.error('❌ Rest Beep Fehler:', err);
             }
             
-            // Vibration: Ein langer Puls
+            vibrate(300);
+        }
+        
+        function vibrate(pattern) {
             try {
                 if (navigator.vibrate) {
-                    navigator.vibrate(300);
+                    navigator.vibrate(pattern);
+                    console.log('✅ Vibration:', pattern);
                 }
-            } catch (err) {}
+            } catch (err) {
+                console.error('❌ Vibration Fehler:', err);
+            }
         }
         
         // Wake Lock Funktionen
@@ -812,34 +806,80 @@
             }
         });
         
-        // Audio Context entsperren beim ersten User-Interaction (wichtig für iOS!)
-        let audioUnlocked = false;
-        
+        // AGGRESSIVE Audio Unlock für iOS
         function unlockAudio() {
-            if (audioUnlocked) return;
+            if (audioUnlocked) {
+                console.log('⚠️ Audio bereits entsperrt');
+                return;
+            }
             
-            console.log('🔓 Versuche Audio zu entsperren...');
+            console.log('🔓 UNLOCK AUDIO für iOS...');
             
-            const AudioContext = window.AudioContext || window.webkitAudioContext;
-            const audioContext = new AudioContext();
+            const ctx = initAudio();
+            if (!ctx) {
+                console.error('❌ Kein Audio Context!');
+                return;
+            }
             
-            if (audioContext.state === 'suspended') {
-                audioContext.resume().then(() => {
-                    console.log('✅ Audio Context entsperrt');
-                    audioUnlocked = true;
-                    
-                    // Test-Beep
-                    playBeep();
-                });
-            } else {
+            // iOS braucht einen echten Sound beim User-Interaction!
+            try {
+                if (ctx.state === 'suspended') {
+                    console.log('🔄 Resume Audio Context...');
+                    ctx.resume().then(() => {
+                        console.log('✅ Audio Context resumed');
+                    });
+                }
+                
+                // Spiele einen stillen Ton um iOS Audio zu entsperren
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                
+                // Kurzer hörbarer Test-Beep
+                osc.frequency.value = 880;
+                osc.type = 'sine';
+                gain.gain.value = 0.3;
+                
+                const now = ctx.currentTime;
+                osc.start(now);
+                osc.stop(now + 0.1);
+                
                 audioUnlocked = true;
-                console.log('✅ Audio bereits entsperrt');
+                console.log('✅✅✅ AUDIO ENTSPERRT! ✅✅✅');
+                
+                // Zeige dem User dass es funktioniert hat
+                showStatus('🔊 Audio aktiviert!');
+                
+                // Spiele einen Test-Beep nach 0.5s
+                setTimeout(() => {
+                    console.log('🧪 Test-Beep...');
+                    playBeep();
+                }, 500);
+                
+            } catch (err) {
+                console.error('❌ Audio Unlock Fehler:', err);
             }
         }
         
-        // Unlock bei jedem Touch-Event versuchen
+        // Unlock bei JEDEM Touch und Click
         document.addEventListener('touchstart', unlockAudio, { passive: true });
+        document.addEventListener('touchend', unlockAudio, { passive: true });
         document.addEventListener('click', unlockAudio, { passive: true });
+        
+        // Auch bei Button-Clicks
+        window.addEventListener('load', () => {
+            console.log('📱 App geladen - bereit für Audio Unlock');
+            // Unlock auch beim Start-Button
+            const startBtn = document.getElementById('start-btn');
+            if (startBtn) {
+                startBtn.addEventListener('click', () => {
+                    unlockAudio();
+                    console.log('▶️ Start Button geklickt');
+                });
+            }
+        });
     </script>
 </body>
 </html>
