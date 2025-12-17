@@ -13,32 +13,7 @@ if (!fs.existsSync(path.join(__dirname, 'data'))) {
   fs.mkdirSync(path.join(__dirname, 'data'));
 }
 
-// Prüfe ob dist existiert
-const distExists = fs.existsSync(path.join(__dirname, 'dist'));
-console.log('dist folder exists:', distExists);
-
-if (!distExists) {
-  console.log('⚠️  No dist folder - starting Vite dev server...');
-  
-  // Starte Vite asynchron
-  setTimeout(async () => {
-    try {
-      const { createServer } = require('vite');
-      const vite = await createServer({
-        server: { middlewareMode: true },
-        appType: 'spa',
-      });
-      app.use(vite.middlewares);
-      console.log('✅ Vite dev server started');
-    } catch (err) {
-      console.error('❌ Failed to start Vite:', err);
-    }
-  }, 100);
-} else {
-  console.log('📦 Serving from dist folder');
-  app.use(express.static('dist'));
-}
-
+// API Routes ZUERST (wichtig!)
 function loadRoutines() {
   try {
     if (fs.existsSync(DATA_FILE)) {
@@ -98,12 +73,56 @@ app.delete('/api/routines/:id', (req, res) => {
   }
 });
 
-if (distExists) {
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
-  });
-}
+// Prüfe ob dist existiert
+const distExists = fs.existsSync(path.join(__dirname, 'dist'));
+console.log('📁 dist folder exists:', distExists);
 
+// Server ERST starten, DANN Vite
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`✅ HIIT Timer running on http://localhost:${PORT}`);
+  console.log(`✅ HIIT Timer API running on http://localhost:${PORT}`);
+  console.log(`   API endpoints ready: /api/routines`);
+  
+  if (!distExists) {
+    console.log('⚙️  Starting Vite dev server (this takes 30-60 seconds)...');
+    
+    // Versuche Vite zu starten, aber crash nicht wenn es fehlschlägt
+    setTimeout(async () => {
+      try {
+        const { createServer } = require('vite');
+        const vite = await createServer({
+          server: { middlewareMode: true },
+          appType: 'spa',
+          logLevel: 'info'
+        });
+        
+        app.use(vite.middlewares);
+        console.log('✅ Vite dev server started successfully!');
+        console.log('🌐 Frontend ready at http://localhost:9012');
+        
+      } catch (err) {
+        console.error('❌ Failed to start Vite dev server:', err.message);
+        console.log('⚠️  API is still running, but frontend is not available');
+        console.log('💡 Try: npm run build to create dist folder');
+      }
+    }, 1000);
+    
+  } else {
+    console.log('📦 Serving from dist folder (production mode)');
+    app.use(express.static('dist'));
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+    });
+    console.log('🌐 Frontend ready at http://localhost:9012');
+  }
+});
+
+// Crash-Handler
+process.on('uncaughtException', (err) => {
+  console.error('❌ Uncaught Exception:', err);
+  console.log('⚠️  Server continues running...');
+});
+
+process.on('unhandledRejection', (err) => {
+  console.error('❌ Unhandled Rejection:', err);
+  console.log('⚠️  Server continues running...');
 });
