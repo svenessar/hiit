@@ -5,7 +5,7 @@ services:
     build: 
       context: .
     ports:
-      - "9012:9012"
+      - "8889:8889"
     volumes:
       - hiit_data:/app/data
     restart: unless-stopped
